@@ -1,0 +1,178 @@
+
+name: Build
+
+on:
+  push:
+    # Always build when there are new commits
+    branches:
+      - '**'
+    # Always build when there are new tagged commits
+    tags:
+      - '**'
+
+    # # Always build when there are new commits to master
+    # branches:
+    #   - master
+    # # Always build release-tags
+    # tags:
+    #   - 'releases/**'
+
+    # Always build pull requests
+  pull_request:
+    branches:
+      - '**'
+
+#
+# The build jobs are organized into two phases:
+#
+# Build:
+#   extract-changelog     - extracts changelog info from history.txt and formats the result as Markdown
+#   build-linux-deb       - builds a .deb package for Ubuntu
+#   build-linux-linuxbrew - verifies that the application could be packaged for Linuxbrew (for Linux)
+#   build-windows         - builds a set of binaries and an MSI archive for Windows
+#   build-macosx-homebrew - verifies that the application would work when packaged for Homebrew (for MacOSX)
+#
+# Publish:
+#   publish-github    - Create a Release in the vlink repo and upload artifacts (.deb packge, Windows binaries, .MSI)
+#   publish-apt       - Trigger an update to the apt repo with a new .deb package
+#   publish-homebrew  - Update the Homebrew (MacOSX) tap with a new formula for vlink
+#
+# The Build phase always runs.
+# The Publish phase only runs when a release has been triggered.
+
+jobs:
+  extract-changelog:
+    name: Extract changelog
+    runs-on: ubuntu-16.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v1
+      - name: Download source
+        run: make clean download
+      - name: Extract changelog
+        run: make extract-changelog
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v1
+        with:
+          name: changelog-artifacts
+          path: build_results
+
+  build-linux-deb:
+    name: Build for Linux - .deb package
+    runs-on: ubuntu-16.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v1
+      - name: Get branch info
+        id: branch_info
+        run: |
+          echo ::set-output name=SOURCE_NAME::${GITHUB_REF#refs/*/}
+          echo ::set-output name=SOURCE_BRANCH::${GITHUB_REF#refs/heads/}
+          echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
+          echo ::set-output name=SOURCE_VERSION::${GITHUB_REF#refs/tags/releases/}
+          echo ::set-output name=SOURCE_ORGANIZATION::$(echo ${{ github.repository }} | cut -d / -f 1)
+          # These can be accessed as ${{ steps.branch_info.outputs.SOURCE_NAME }} etc in subsequent steps
+      - name: Install prerequisites
+        run: |
+          sudo apt-get update && sudo apt-get -y install debhelper devscripts libevent-dev
+      - name: Build executables
+        run: DISTRIBUTION=xenial make clean download build
+      - name: Create .deb package
+        run: DISTRIBUTION=xenial make package-deb
+      - name: Test .deb package
+        run: DISTRIBUTION=xenial make test-deb
+      - name: Extract changelog
+        run: make extract-changelog
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v1
+        with:
+          name: linux-deb-artifacts
+          path: build_results
+
+  build-linux-linuxbrew:
+    name: Build for Linux - Linuxbrew formula
+    runs-on: ubuntu-16.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v1
+      - name: Get branch info
+        id: branch_info
+        run: |
+          echo ::set-output name=SOURCE_NAME::${GITHUB_REF#refs/*/}
+          echo ::set-output name=SOURCE_BRANCH::${GITHUB_REF#refs/heads/}
+          echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
+          echo ::set-output name=SOURCE_VERSION::${GITHUB_REF#refs/tags/releases/}
+          echo ::set-output name=SOURCE_ORGANIZATION::$(echo ${{ github.repository }} | cut -d / -f 1)
+          # These can be accessed as ${{ steps.branch_info.outputs.SOURCE_NAME }} etc in subsequent steps
+      - name: Install prerequisites
+        run: |
+          sudo apt-get update && sudo apt-get -y install jq
+          source ./linux/scripts/install-linuxbrew.sh
+          echo "::set-env name=HOMEBREW_PREFIX::${HOMEBREW_PREFIX}"
+          echo "::set-env name=HOMEBREW_CELLAR::${HOMEBREW_CELLAR}"
+          echo "::set-env name=HOMEBREW_REPOSITORY::${HOMEBREW_REPOSITORY}"
+          echo "::add-path::${HOMEBREW_PREFIX}/bin"
+          echo "::add-path::${HOMEBREW_PREFIX}/sbin"
+          brew tap ${{ steps.branch_info.outputs.SOURCE_ORGANIZATION }}/prebuilt-amiga-dev-tools
+          # Hack: change permissions for library from 666 to 644 since the umask is not honored
+          #  yet 'brew audit' requires 644 for the formula file on Linux
+          # We change permissions for all taps, since brew will lowercase org folder names, so
+          #  ...SOURCE_ORGANIZATION is not necessarily a valid folder name
+          chmod -R go-w /home/linuxbrew/.linuxbrew/Homebrew/Library/Taps
+      - name: Update homebrew formula locally
+        run: make update-homebrew-formula-locally
+      - name: Test homebrew formula
+        run: make test-homebrew-formula
+
+  build-windows:
+    name: Build for Windows
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v1
+      - name: Build executables
+        shell: powershell
+        run: |
+          .\windows\scripts\set-msvc-path.ps1
+          if ((Start-Process nmake.exe -ArgumentList clean,download,build -NoNewWindow -Wait -PassThru).ExitCode) { throw }
+      - name: Create packages
+        shell: powershell
+        run: |
+          .\windows\scripts\set-msvc-path.ps1
+          .\windows\scripts\set-wix-path.ps1
+          if ((Start-Process nmake.exe -ArgumentList package -NoNewWindow -Wait -PassThru).ExitCode) { throw }
+      - name: Test packages
+        shell: powershell
+        run: |
+          .\windows\scripts\set-msvc-path.ps1
+          if ((Start-Process nmake.exe -ArgumentList test-packages -NoNewWindow -Wait -PassThru).ExitCode) { throw }
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v1
+        with:
+          name: windows-artifacts
+          path: build_results
+
+  build-macosx-homebrew:
+    name: Build for MacOSX - Homebrew formula
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v1
+      - name: Get branch info
+        id: branch_info
+        run: |
+          echo ::set-output name=SOURCE_NAME::${GITHUB_REF#refs/*/}
+          echo ::set-output name=SOURCE_BRANCH::${GITHUB_REF#refs/heads/}
+          echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
+          echo ::set-output name=SOURCE_VERSION::${GITHUB_REF#refs/tags/releases/}
+          echo ::set-output name=SOURCE_ORGANIZATION::$(echo ${{ github.repository }} | cut -d / -f 1)
+          # These can be accessed as ${{ steps.branch_info.outputs.SOURCE_NAME }} etc in subsequent steps
+      - name: Install prerequisites
+        run: |
+          brew install jq
+          brew tap ${{ steps.branch_info.outputs.SOURCE_ORGANIZATION }}/prebuilt-amiga-dev-tools
+      - name: Update homebrew formula locally
+        run: make update-homebrew-formula-locally
+      - name: Test homebrew formula
+        run: make test-homebrew-formula
