@@ -1,0 +1,25 @@
+#!/usr/bin/make -f
+
+include ../Config.mk
+
+PACKAGEVERSION = $(VLINK_VERSION)
+
+DESTDIR=debian/vlink
+
+%:
+	dh $@
+
+override_dh_auto_clean:
+
+override_dh_auto_build:
+
+override_dh_auto_test:
+
+override_dh_auto_install:
+	mkdir -p $(DESTDIR)/usr/bin
+
+	cp ../vlink/vlink $(DESTDIR)/usr/bin/
+	chmod ugo+rx $(DESTDIR)/usr/bin/vlink
+
+override_dh_gencontrol:
+	dh_gencontrol -- -v$(PACKAGEVERSION)
