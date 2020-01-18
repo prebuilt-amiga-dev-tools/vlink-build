@@ -14,8 +14,7 @@ MD = mkdir
 
 CC = cl
 CCOUT = /Fo
-#COPTS = /nologo /O2 /MT /Zp1 /Dsnprintf=_snprintf /c
-COPTS = /nologo /O2 /MD /Dsnprintf=_snprintf /c		# use /MT for static linking
+COPTS = /nologo /O2 /MD /c				# use /MT for static linking
 COPTS = $(COPTS) /wd4996				# Disable warning regarding deprecated functions 
 							# ("use strcpy_s instead of strcpy" etc)
 COPTS = $(COPTS) $(WIN32_PLATFORMSDK_INCLUDE)
