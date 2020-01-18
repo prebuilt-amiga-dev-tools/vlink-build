@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WixLocalization Culture="en-us" xmlns="http://schemas.microsoft.com/wix/2006/localization">
+  <String Id="ApplicationName">vlink</String>
+  <String Id="ManufacturerName">Frank Wille</String>
+  <String Id="ProductDescription">Installer for vlink</String>
+  <String Id="Comments">vlink is copyright in 2002-2019 by Frank Wille.</String>
+  <String Id="FeatureMainProgramTitle">vlink</String>
+  <String Id="FeatureMainProgramDescription">All vasmm68k components</String>
+</WixLocalization>
