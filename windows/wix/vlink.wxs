@@ -1,0 +1,133 @@
+<?xml version='1.0' encoding='windows-1252'?>
+
+<!-- This installer is largely based on https://helgeklein.com/blog/2014/09/real-world-example-wix-msi-application-installer/ -->
+
+<?define InfoURL="https://github.com/$(var.GithubOrganizationName)/vlink/" ?>
+
+<!-- 32-bit / 64-bit variables -->
+<?if $(sys.BUILDARCH) = "x86"?>
+  <?define Win64 = "no" ?>
+  <?define MinimumInstallerVersion = "100"?>
+  <?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
+<?elseif $(sys.BUILDARCH)="x64"?>
+  <?define Win64 = "yes" ?>
+  <?define MinimumInstallerVersion = "200"?>
+  <?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
+<?else?>
+    <?error Unsupported value of sys.BUILDARCH=$(sys.BUILDARCH)?>
+<?endif?>
+
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+  <Product Id='*' Name='!(loc.ApplicationName) $(var.ApplicationVersion)' UpgradeCode='C94DD2C3-A8F0-4877-9F14-258E6BD7DE3E'
+    Language='1033' Codepage='1252' Version='$(var.ApplicationVersion)' Manufacturer='!(loc.ManufacturerName)'>
+
+    <Package Id='*' Keywords='Installer' Description='!(loc.ProductDescription)'
+      Comments='!(loc.Comments)' Manufacturer='!(loc.ManufacturerName)'
+      InstallerVersion='$(var.MinimumInstallerVersion)' Languages='1033' Compressed='yes' SummaryCodepage='1252' />
+
+    <!-- Set properties for add/remove programs -->
+    <Property Id="ARPHELPLINK" Value="$(var.InfoURL)" />
+    <Property Id="ARPNOREPAIR" Value="yes" Secure="yes" />      <!-- Remove repair -->
+
+     <!-- Set up ARPINSTALLLOCATION property (http://blogs.technet.com/b/alexshev/archive/2008/02/09/from-msi-to-wix-part-2.aspx) -->
+    <CustomAction Id="SetARPINSTALLLOCATION" Property="ARPINSTALLLOCATION" Value="[INSTALLDIR]" />
+
+    <!-- Upgrade logic -->
+    <!-- Always upgrade/downgrade, never allow two versions to be installed next to each other -->
+    <!-- AllowSameVersionUpgrades (which is implicitly set when AllowDowngrades is set) causes ICE61 which must be ignored when invoking light.exe -->
+    <MajorUpgrade AllowDowngrades="yes" />
+
+    <!-- This is the main installer sequence run when the product is actually installed -->
+    <InstallExecuteSequence>
+    
+        <!-- Determine the install location after the install path has been validated by the installer -->
+        <Custom Action="SetARPINSTALLLOCATION" After="InstallValidate"></Custom>
+
+    </InstallExecuteSequence>
+
+    <!-- Determine the directory of a previous installation (if one exists). If not INSTALLDIR stays empty -->
+    <Property Id="INSTALLDIR">
+        <RegistrySearch Id="DetermineInstallLocation" Type="raw" Root="HKLM" Key="Software\!(loc.ManufacturerName)\InstalledProducts\!(loc.ApplicationName)" Name="InstallLocation" />
+    </Property>
+
+    <!-- We do not have more than one medium (Floppy, CD, ...). Everything in one file. -->
+    <Media Id='1' Cabinet='Sample.cab' EmbedCab='yes' />
+
+    <Directory Id='TARGETDIR' Name='SourceDir'>
+      <Directory Id='$(var.PlatformProgramFilesFolder)'>
+        <Directory Id='ORGANIZATIONDIR' Name='$(var.GithubOrganizationName)'>
+          <Directory Id='INSTALLDIR' Name='vlink'>
+
+            <Component Id='vlink_executable' Guid='353EFB4E-F464-4641-9521-6858505C317F' Win64='$(var.Win64)'>
+              <File Id='vlink' Name='vlink.exe' DiskId='1' Source='vlink.exe' KeyPath='yes'/>
+            </Component>
+
+            <Component Id='vlink_manual' Guid='4B70D3F6-A285-44EA-A584-E1768F5AF6A6' Win64='$(var.Win64)'>
+              <File Id='vlink_pdf' Name='vlink.pdf' DiskId='1' Source='vlink.pdf' KeyPath='yes'/>
+            </Component>
+
+          </Directory>
+        </Directory>
+      </Directory>
+
+      <Component Id='Path' Guid='9B05967C-36CE-4A20-92DB-0C208E376708'>
+        <Environment Id='PATH' Name='PATH' Value='[INSTALLDIR]' Permanent='no' Part='last' Action='set' System='no' />
+      </Component>
+
+      <!-- Registry entries -->
+      <Component Id="RegValInstallLocation_comp" Guid="B27DB2F4-02E6-446B-8746-22783AA6424C">
+        <!-- Do NOT use the application's default registry key here, because THIS key will be removed on uninstall
+              (important when installing a newer version, because that is uninstall followed by install) -->
+        <RegistryKey Root="HKLM" Key="Software\!(loc.ManufacturerName)\InstalledProducts\!(loc.ApplicationName)">
+            <RegistryValue Name="InstallLocation" Value="[INSTALLDIR]" Type="string" KeyPath="yes" />
+        </RegistryKey>
+      </Component>
+
+    </Directory>
+
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLDIR" />
+    <!-- Activate built-in UI flow:
+
+      If not installed:
+
+          "Hi and welcome to application X"
+
+          "<License agreement>"
+          "[X] I agree to the license agreement"
+
+          "Change install location"
+          "<default install location pre-populated; can be changed with file selector>"
+
+          "Click Install to proceed with installation"
+
+          "<... progress bar ...>"
+
+          "Installer complete"
+
+      If installed:
+
+          "Hi and welcome to application X"
+
+          "[Change - grayed out]"
+          "[Repair - grayed out]"
+          "[Remove]"
+
+          "Click Remove to proceed with uninstallation"
+
+          "<... progress bar ...>"
+
+          "Installer complete"
+      -->
+    <UIRef Id="WixUI_InstallDir" />
+
+    <WixVariable Id="WixUILicenseRtf" Value="windows/wix/license.rtf" />
+
+    <Feature Id='Complete' Level='1' Title="!(loc.FeatureMainProgramTitle)" Description="!(loc.FeatureMainProgramDescription)">
+      <ComponentRef Id='vlink_executable' />
+      <ComponentRef Id='vlink_manual' />
+      <ComponentRef Id='RegValInstallLocation_comp' />
+      <ComponentRef Id='Path' />
+    </Feature>
+
+  </Product>
+</Wix>
