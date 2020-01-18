@@ -7,6 +7,6 @@ if [ $# -ne 0 ]; then
  exit 1
 fi
 
-FORMULA=vasmm68k
+FORMULA=vlink
 
 brew uninstall ${FORMULA}
