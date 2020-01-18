@@ -1,0 +1,12 @@
+Source: vlink
+Maintainer: Username <user@email.com>
+Build-Depends: debhelper (>= 9),
+               wget, ca-certificates, lsb-release,
+               libevent-dev
+
+Package: vlink
+Architecture: any
+Description: vlink linker thingy
+Section: development
+Priority: optional
+

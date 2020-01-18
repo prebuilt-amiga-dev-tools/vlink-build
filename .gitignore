@@ -1,0 +1,16 @@
+# Ignore vlink source build folder
+/vlink
+
+# Ignore intermediate files from .deb package building process
+/linux/debian/debhelper-build-stamp
+/linux/debian/files
+/linux/debian/vlink
+/linux/debian/vlink.debhelper.log
+/linux/debian/vlink.substvars
+/vlink_*
+
+# Ignore intermediate files from Chocolatey package building process
+/windows/choco/bin
+
+# Ignore build artifacts
+/build_results
