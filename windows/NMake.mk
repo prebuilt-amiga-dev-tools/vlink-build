@@ -11,9 +11,9 @@ GITHUB_ORGANIZATION_NAME = prebuilt-amiga-dev-tools
 
 default: clean download build package test-packages
 
-package: package-binaries package-wix package-choco
+package: package-binaries package-wix
 
-test-packages: test-binaries test-wix test-choco
+test-packages: test-binaries test-wix
 
 .PHONY: clean download build package test-package
 .PHONY: package-binaries package-wix package-choco
