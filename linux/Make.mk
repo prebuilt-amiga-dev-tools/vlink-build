@@ -3,26 +3,33 @@
 
 include Config.mk
 
+# DISTRIBUTION defaults to unknown
+
 ifeq ($(strip $(DISTRIBUTION)),)
 DISTRIBUTION := unknown
 endif
 
-# Ensure that VLINK_URL, VLINK_DOC_URL and VLINK_VERSION can be overridden
-#  through the use of NEW_xxx environment variables.
-# These variables are used when calling 'make update-config'.
+# BUILD_TYPE defaults to NIGHTLY
 
-ifneq ($(strip $(NEW_VLINK_URL)),)
-VLINK_URL = $(NEW_VLINK_URL)
+ifeq ($(strip $(BUILD_TYPE)),)
+BUILD_TYPE := NIGHTLY
 endif
 
-ifneq ($(strip $(NEW_VLINK_DOC_URL)),)
-VLINK_DOC_URL = $(NEW_VLINK_DOC_URL)
-endif
+# Setup VLINK_URL and VLINK_VERSION to refer to either the release or nightly build
 
-ifneq ($(strip $(NEW_VLINK_VERSION)),)
-VLINK_VERSION = $(NEW_VLINK_VERSION)
+ifeq ($(strip $(BUILD_TYPE)),RELEASE)
+VLINK_URL := $(VLINK_RELEASE_URL)
+VLINK_VERSION := $(VLINK_RELEASE_VERSION)
+else ifeq ($(strip $(BUILD_TYPE)),NIGHTLY)
+VLINK_URL := $(VLINK_NIGHTLY_URL)
+# It would be nice if we could have VLINK_VERSION = "0.0.0" for nightly builds.
+# However, the .deb packaging flow does not have access to BUILD_TYPE or any local
+#  variables from Make.mk. Therefore, we use VLINK_RELEASE_VERSION to keep
+#  the versioning consistent.
+VLINK_VERSION := $(VLINK_RELEASE_VERSION)
+else
+$(error BUILD_TYPE must be undefined, or set to NIGHTLY or RELEASE)
 endif
-
 
 BUILD_RESULTS_DIR = build_results
 
@@ -68,7 +75,7 @@ uninstall-deb:
 #  the Git repository and push to origin
 
 update-config:
-	./linux/scripts/update-config.sh "$(NEW_VLINK_URL)" "$(NEW_VLINK_DOC_URL)" "$(NEW_VLINK_VERSION)"
+	./linux/scripts/update-config.sh "${NEW_VLINK_RELEASE_URL}" "$(NEW_VLINK_RELEASE_VERSION)"
 
 release:
 	./linux/scripts/release.sh "$(VLINK_VERSION)"

@@ -1,7 +1,23 @@
 
 # Windows build script
 
-!include Config.mk
+!INCLUDE Config.mk
+
+!IF "$(BUILD_TYPE)" == "RELEASE"
+VLINK_URL = "$(VLINK_RELEASE_URL)"
+VLINK_VERSION = "$(VLINK_RELEASE_VERSION)"
+!MESSAGE RELEASE path used
+!ELSEIF "$(BUILD_TYPE)" == "NIGHTLY" || !DEFINED(BUILD_TYPE)
+VLINK_URL = "$(VLINK_NIGHTLY_URL)"
+# It would be nice if we could have VLINK_VERSION = "0.0.0" for nightly builds.
+# However, the .deb packaging flow does not have access to BUILD_TYPE or any local
+#  variables from Make.mk. Therefore, we use VLINK_RELEASE_VERSION to keep
+#  the versioning consistent.
+VLINK_VERSION = "$(VLINK_RELEASE_VERSION)"
+!MESSAGE NIGHTLY path used
+!ELSE 
+!MESSAGE BUILD_TYPE must be undefined, or set to NIGHTLY or RELEASE
+!ENDIF
 
 VLINKDIR=vlink
 
