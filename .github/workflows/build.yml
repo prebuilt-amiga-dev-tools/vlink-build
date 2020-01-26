@@ -215,7 +215,7 @@ jobs:
           name: global-environment-variables
       - name: Apply global environment variables to current job
         id: global_env
-        run: .\global-environment-variables\global-environment-variables.ps1
+        run: chmod ugo+x ./global-environment-variables/global-environment-variables.sh && ./global-environment-variables/global-environment-variables.sh
         # These can be accessed as ${{ steps.global_env.outputs.SOURCE_NAME }} etc in subsequent steps
       - name: Install prerequisites
         run: |
