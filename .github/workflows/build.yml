@@ -82,7 +82,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Download global environment variables artifacts
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4.1.7
         with:
           name: global-environment-variables
       - name: Apply global environment variables to current job
@@ -107,7 +107,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Download global environment variables artifacts
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4.1.7
         with:
           name: global-environment-variables
       - name: Apply global environment variables to current job
@@ -137,7 +137,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Download global environment variables artifacts
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4.1.7
         with:
           name: global-environment-variables
       - name: Apply global environment variables to current job
@@ -173,7 +173,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v1
       - name: Download global environment variables artifacts
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4.1.7
         with:
           name: global-environment-variables
       - name: Apply global environment variables to current job
@@ -210,7 +210,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Download global environment variables artifacts
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4.1.7
         with:
           name: global-environment-variables
       - name: Apply global environment variables to current job
@@ -235,7 +235,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Download global environment variables artifacts
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4.1.7
         with:
           name: global-environment-variables
       - name: Apply global environment variables to current job
@@ -246,15 +246,15 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get -y install jq
       - name: Download changelog-artifacts
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4.1.7
         with:
           name: changelog-artifacts
       - name: Download linux-deb-artifacts
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4.1.7
         with:
           name: linux-deb-artifacts
       - name: Download windows-artifacts
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4.1.7
         with:
           name: windows-artifacts
       - name: Create GitHub release
@@ -281,7 +281,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Download global environment variables artifacts
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4.1.7
         with:
           name: global-environment-variables
       - name: Apply global environment variables to current job
@@ -289,7 +289,7 @@ jobs:
         run: chmod ugo+x ./global-environment-variables/global-environment-variables.sh && ./global-environment-variables/global-environment-variables.sh
         # These can be accessed as ${{ steps.global_env.outputs.SOURCE_NAME }} etc in subsequent steps
       - name: Download linux-deb-artifacts
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4.1.7
         with:
           name: linux-deb-artifacts
       - name: Publish Linux deb package to Apt repository
@@ -309,7 +309,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Download global environment variables artifacts
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4.1.7
         with:
           name: global-environment-variables
       - name: Apply global environment variables to current job
